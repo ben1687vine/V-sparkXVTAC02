@@ -31,7 +31,13 @@ html,body{width:100%;overflow-x:hidden}
 }
 .result-card,.role-art{min-width:0;max-width:100%}
 .role-art{overflow:hidden;contain:paint}
-.role-art img{width:100%;height:100%;max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:contain;object-position:center;user-select:none;-webkit-user-drag:none;cursor:pointer}
+.role-art img{width:100%;height:100%;max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:contain;object-position:center;user-select:none;-webkit-user-drag:none}
+.result-card{width:min(100%,360px);aspect-ratio:9/16;margin-inline:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;touch-action:manipulation;cursor:pointer}
+.result-card .card-kicker{margin-top:2px;text-align:center}
+.result-card .result-meta{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-card .role-art{flex:0 0 185px}
+.result-card .result-copy{width:100%}
+.result-card .axis-scores{display:none!important}
 </style>
 </head>
 <body><main class="shell"><header class="masthead"><div class="brand">VTAC 康士藤人才測評中心</div><div class="edition">FUTURE FORESIGHT</div></header>
@@ -71,17 +77,26 @@ function loadRoleImage(){
 	};
 	tryNext();
 }
-function downloadRoleImage(image){
-	const link=document.createElement('a');
-	link.href=image.currentSrc||image.src;
-	link.download=`${image.alt||'職場角色插圖'}.jpg`;
-	link.click();
+async function downloadRoleCard(){
+	if(!window.html2canvas)return alertUser('下載功能需要網路載入元件，請直接截圖保存結果卡。');
+	try{
+		const image=document.querySelector('#art img');
+		if(image&&image.decode)await image.decode();
+		const canvas=await html2canvas(document.getElementById('capture'),{scale:2,backgroundColor:'#19070b',useCORS:true,imageTimeout:15000});
+		const link=document.createElement('a');
+		link.download='Future_Foresight_專屬角色卡.png';
+		link.href=canvas.toDataURL('image/png');
+		link.click();
+	}catch(error){
+		console.error('專屬角色卡下載失敗:',error);
+		alertUser('角色卡尚未完成載入，請稍候再試。');
+	}
 }
 let holdTimer;
 document.addEventListener('pointerdown',event=>{
-	const image=event.target.closest('#art img');
-	if(!image)return;
-	holdTimer=setTimeout(()=>downloadRoleImage(image),550);
+	const card=event.target.closest('#capture');
+	if(!card)return;
+	holdTimer=setTimeout(downloadRoleCard,650);
 });
 document.addEventListener('pointerup',()=>clearTimeout(holdTimer));
 document.addEventListener('pointercancel',()=>clearTimeout(holdTimer));
@@ -97,6 +112,5 @@ document.getElementById('finish').addEventListener('click',()=>requestAnimationF
 	document.getElementById('card-participant').textContent=document.getElementById('name').value.trim()||'無名冒險者';
 	document.getElementById('card-company').textContent=document.getElementById('company').value.trim()||'未填寫公司';
 	document.getElementById('card-age').textContent=document.getElementById('age').value||'未填寫';
-	card.querySelector('.axis-scores').style.display='flex';
 }));
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></body></html>
