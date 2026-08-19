@@ -32,17 +32,17 @@ html,body{width:100%;overflow-x:hidden}
 }
 .result-card,.role-art{min-width:0;max-width:100%}
 .role-art{overflow:hidden;contain:paint}
-.role-art img{max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:cover;object-position:center}
+.role-art img{width:100%;height:100%;max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:contain;object-position:center;user-select:none;-webkit-user-drag:none;cursor:pointer}
 </style>
 </head>
 <body><main class="shell"><header class="masthead"><div class="brand">VTAC 康士藤人才測評中心</div><div class="edition">FUTURE FORESIGHT</div></header>
-<section class="view active" id="intro"><div class="hero"><div class="eyebrow">洞見未來 · 60 SEC</div><h1>解鎖你的<br><em>職場角色</em></h1><p class="lead">高壓挑戰來臨時，你會如何應對？完成八題快速測驗，找到屬於你的職場冒險者。</p></div><div class="panel"><div class="panel-title"><h2>建立冒險者檔案</h2><span>01 / 03</span></div><div class="field"><label for="name">角色名稱（ID）</label><input id="name" placeholder="姓名或暱稱" maxlength="30"></div><div class="field"><label for="company">所屬冒險者公會（公司）</label><input id="company" placeholder="公司名稱" maxlength="50"></div><div class="field"><label for="age">當前等級（年齡）</label><input id="age" type="number" min="1" max="120" placeholder="例如：25"></div><div class="field"><label for="gender">性別屬性</label><select id="gender"><option value="">請選擇</option><option>男</option><option>女</option><option>不透露</option></select></div><button class="primary" id="start">開啟挑戰　→</button></div></section>
+<section class="view active" id="intro"><div class="hero"><div class="eyebrow">洞見未來 · 60 SEC</div><h1>解鎖你的<br><em>職場角色</em></h1><p class="lead">挑戰來臨時，你會如何應對？完成八題快速測驗，找到屬於你的職場角色。</p></div><div class="panel"><div class="panel-title"><h2>建立冒險者檔案</h2><span>01 / 03</span></div><div class="field"><label for="name">冒險者名稱（ID）</label><input id="name" placeholder="姓名或暱稱" maxlength="30"></div><div class="field"><label for="company">所屬冒險者公會（公司）</label><input id="company" placeholder="公司名稱" maxlength="50"></div><div class="field"><label for="age">當前等級（年齡）</label><input id="age" type="number" min="1" max="120" placeholder="例如：25"></div><div class="field"><label for="gender">性別屬性</label><select id="gender"><option value="">請選擇</option><option>男</option><option>女</option><option>不透露</option></select></div><button class="primary" id="start">開啟挑戰　→</button></div></section>
 <section class="view" id="q1"><div class="progress"><span>任務階段 1 / 2</span><div class="progress-line"><i></i></div></div><div id="questions-a"></div><button class="primary" id="next">下一階段　→</button></section>
 <section class="view" id="q2"><div class="progress"><span>任務階段 2 / 2</span><div class="progress-line"><i style="width:100%"></i></div></div><div id="questions-b"></div><button class="primary" id="finish">結算專屬角色　✦</button></section>
 <section class="view" id="result"><div class="eyebrow">YOUR RESULT · 角色已解鎖</div><div class="result-card" id="capture"><div class="card-kicker">FUTURE FORESIGHT 洞見未來</div><div class="role-art" id="art">✦</div><div class="role-name" id="role">角色名稱</div><div class="result-copy"><strong>冒險者：<span id="result-name"></span></strong><br><span id="description"></span><div class="axis-scores"><span>風險 Y 軸：<strong id="risk-score">0</strong> 分</span><span>機會 X 軸：<strong id="opportunity-score">0</strong> 分</span></div></div><div class="card-foot">✦ 憑此畫面至活動櫃台，領取您的專屬小禮 ✦</div></div><button class="primary" id="download">下載專屬卡牌</button><button class="secondary" id="restart">重新測驗</button></section></main><div class="notice" id="notice"><div class="notice-box"><h3>提示</h3><p id="notice-text"></p><button class="primary" id="close">知道了</button></div></div>
 <script>
 const GOOGLE_SCRIPT_URL='YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
-const questions=['面對高壓挑戰時，我會專注完成任務，提升安全感。','面對高壓挑戰時，我會守住並努力完成夥伴交付的任務。','面對高壓挑戰時，我會避開任務可能失敗的風險。','面對高壓挑戰時，我會確認任務穩定的推進。','面對高壓挑戰時，我會把握每一個完成任務的機會。','我願意承擔風險，挑戰高難度關卡，爭取任務勝利。','我會選擇能提升等級、累積經驗值的任務關卡。','我會花時間找攻略，規劃角色養成，順利闖關。'];
+const questions=['面對挑戰時，我會專注完成任務，提升安全感。','面對挑戰時，我會守住並努力完成夥伴交付的任務。','面對挑戰時，我會避開任務可能失敗的風險。','面對挑戰時，我會確認任務穩定的推進。','面對挑戰時，我會把握每一個完成任務的機會。','我願意承擔風險，挑戰高難度關卡，爭取任務勝利。','我會優先選擇能提升等級、累積經驗值的任務關卡。','我會花時間找攻略，規劃角色養成，以順利闖關。'];
 const scores=Array(8).fill(0);
 const roles={法師:{title:'第一象限：策略的法師',icon:'◈',desc:'風險與機會意識都高，你能在高壓與高期待中累積知識、找出最優解，運用智慧與策略完成任務。'},騎士:{title:'第二象限：守護的騎士',icon:'♜',desc:'風險意識高、機會意識低，你以守護與避免失敗為優先，是團隊最堅實的後盾，能確保任務穩定推進。'},弓箭手:{title:'第三象限：專注的弓箭手',icon:'➶',desc:'風險與機會意識都低，你傾向專注自身與團隊的累積，先從攻略找出解答，再運用策略精準完成任務。'},探險家:{title:'第四象限：勇敢的探險家',icon:'✧',desc:'風險意識低、機會意識高，你把挑戰視為機會，能無畏困難果斷行動，積極開拓並爭取任務成果。'}};
 function renderQuestions(target,start){const box=document.getElementById(target);box.innerHTML=questions.slice(start,start+4).map((text,offset)=>{const i=start+offset;return `<article class="question"><p>${i+1}. ${text}</p><div class="scores">${Array.from({length:10},(_,n)=>`<button class="score" data-q="${i}" data-value="${n+1}">${n+1}</button>`).join('')}</div><div class="hint"><span>極不符合</span><span>極為符合</span></div></article>`}).join('')}
@@ -65,11 +65,26 @@ function loadRoleImage(){
 		const image=document.createElement('img');
 		const extension=roleImageExtensions[extensionIndex++];
 		image.alt='職場角色插圖';
+		image.title='按住角色圖片即可另存';
 		image.onload=()=>{art.textContent='';art.appendChild(image)};
 		image.onerror=tryNext;
 		image.src=`${baseName}.${extension}`;
 	};
 	tryNext();
 }
+function downloadRoleImage(image){
+	const link=document.createElement('a');
+	link.href=image.currentSrc||image.src;
+	link.download=`${image.alt||'職場角色插圖'}.jpg`;
+	link.click();
+}
+let holdTimer;
+document.addEventListener('pointerdown',event=>{
+	const image=event.target.closest('#art img');
+	if(!image)return;
+	holdTimer=setTimeout(()=>downloadRoleImage(image),550);
+});
+document.addEventListener('pointerup',()=>clearTimeout(holdTimer));
+document.addEventListener('pointercancel',()=>clearTimeout(holdTimer));
 document.getElementById('finish').addEventListener('click',()=>requestAnimationFrame(loadRoleImage));
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></body></html>
