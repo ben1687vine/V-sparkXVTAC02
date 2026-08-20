@@ -52,13 +52,16 @@ html,body{width:100%;overflow-x:hidden}
 const GOOGLE_SCRIPT_URL='YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
 const questions=['面對挑戰時，我會專注完成任務，提升安全感。','面對挑戰時，我會守住並努力完成夥伴交付的任務。','面對挑戰時，我會避開任務可能失敗的風險。','面對挑戰時，我會確認任務穩定的推進。','面對挑戰時，我會把握每一個完成任務的機會。','我願意承擔風險，挑戰高難度關卡，爭取任務勝利。','我會優先選擇能提升等級、累積經驗值的任務關卡。','我會花時間找攻略，規劃角色養成，以順利闖關。'];
 const scores=Array(8).fill(0);
+const itemMeans=[8.57,8.73,8.64,8.44,8.40,7.62,7.68,7.36];
+const itemStandardDeviations=[1.37,1.28,1.47,1.40,1.45,1.75,1.98,1.98];
 const roles={法師:{title:'第一象限\n策略的法師',icon:'◈',desc:'同時看中風險與機會，你能在高壓與對結果的期待中權衡利弊得失，運用智慧與策略完成任務。'},騎士:{title:'第二象限\n守護的騎士',icon:'♜',desc:'風險意識非常高，你以守護與避免失敗為優先，是團隊最堅實的後盾，能確保任務穩定推進。'},弓箭手:{title:'第三象限\n專注的弓箭手',icon:'➶',desc:'撇除外在因素，你傾向著眼於自身與團隊的累積，專注完成眼前的任務。'},探險家:{title:'第四象限\n勇敢的探險家',icon:'✧',desc:'認為風險與可能性並存，你把挑戰視為機會，能無畏困難果斷行動，積極開拓並爭取任務成果。'}};
 function renderQuestions(target,start){const box=document.getElementById(target);box.innerHTML=questions.slice(start,start+4).map((text,offset)=>{const i=start+offset;return `<article class="question"><p>${i+1}. ${text}</p><div class="scores">${Array.from({length:10},(_,n)=>`<button class="score" data-q="${i}" data-value="${n+1}">${n+1}</button>`).join('')}</div><div class="hint"><span>極不符合</span><span>極為符合</span></div></article>`}).join('')}
 renderQuestions('questions-a',0);renderQuestions('questions-b',4);document.addEventListener('click',e=>{const btn=e.target.closest('.score');if(!btn)return;const q=+btn.dataset.q;scores[q]=+btn.dataset.value;document.querySelectorAll(`[data-q="${q}"]`).forEach(el=>el.classList.toggle('active',el===btn))});
 const show=(id)=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)};const alertUser=(msg)=>{document.getElementById('notice-text').textContent=msg;document.getElementById('notice').classList.add('show')};
 document.getElementById('close').onclick=()=>document.getElementById('notice').classList.remove('show');document.getElementById('start').onclick=()=>show('q1');document.getElementById('next').onclick=()=>scores.slice(0,4).some(v=>!v)?alertUser('請先完成第一階段的四題評分。'):show('q2');
-const toPercent=score=>score*10;
-document.getElementById('finish').onclick=()=>{if(scores.slice(4).some(v=>!v))return alertUser('請先完成第二階段的四題評分。');const riskScore=Math.round(scores.slice(0,4).reduce((sum,score)=>sum+toPercent(score),0)/4);const opportunityScore=Math.round(scores.slice(4).reduce((sum,score)=>sum+toPercent(score),0)/4);const key=opportunityScore>=50?(riskScore>=50?'法師':'探險家'):(riskScore>=50?'騎士':'弓箭手'),res=roles[key];document.getElementById('role').textContent=res.title;document.getElementById('art').textContent=res.icon;document.getElementById('description').textContent=res.desc;document.getElementById('risk-score').textContent=riskScore;document.getElementById('opportunity-score').textContent=opportunityScore;document.getElementById('result-name').textContent=document.getElementById('name').value.trim()||'無名冒險者';show('result');if(GOOGLE_SCRIPT_URL.startsWith('http'))fetch(GOOGLE_SCRIPT_URL,{method:'POST',body:new URLSearchParams({name:document.getElementById('name').value,company:document.getElementById('company').value,age:document.getElementById('age').value,gender:document.getElementById('gender').value,scores:scores.join(','),riskScore,opportunityScore,role:res.title})}).catch(()=>{})};
+const toTScore=(score,index)=>50+10*((score-itemMeans[index])/itemStandardDeviations[index]);
+const axisTScore=(start)=>Math.round(scores.slice(start,start+4).reduce((sum,score,index)=>sum+toTScore(score,start+index),0)/4);
+document.getElementById('finish').onclick=()=>{if(scores.slice(4).some(v=>!v))return alertUser('請先完成第二階段的四題評分。');const riskScore=axisTScore(0);const opportunityScore=axisTScore(4);const key=opportunityScore>=50?(riskScore>=50?'法師':'探險家'):(riskScore>=50?'騎士':'弓箭手'),res=roles[key];document.getElementById('role').textContent=res.title;document.getElementById('art').textContent=res.icon;document.getElementById('description').textContent=res.desc;document.getElementById('risk-score').textContent=riskScore;document.getElementById('opportunity-score').textContent=opportunityScore;document.getElementById('result-name').textContent=document.getElementById('name').value.trim()||'無名冒險者';show('result');if(GOOGLE_SCRIPT_URL.startsWith('http'))fetch(GOOGLE_SCRIPT_URL,{method:'POST',body:new URLSearchParams({name:document.getElementById('name').value,company:document.getElementById('company').value,age:document.getElementById('age').value,gender:document.getElementById('gender').value,scores:scores.join(','),riskScore,opportunityScore,role:res.title})}).catch(()=>{})};
 document.getElementById('download').onclick=async()=>{if(!window.html2canvas)return alertUser('下載功能需要網路載入元件，請直接截圖保存結果卡。');const image=document.querySelector('#art img');try{if(image&&image.decode)await image.decode();else if(image&&!image.complete)await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject});const canvas=await html2canvas(document.getElementById('capture'),{scale:2,backgroundColor:'#171b24',useCORS:true,imageTimeout:15000});const a=document.createElement('a');a.download='Future_Foresight_我的角色卡.png';a.href=canvas.toDataURL('image/png');a.click()}catch(error){console.error('卡牌圖片載入失敗:',error);alertUser('圖片尚未完成載入，請稍候再下載；若仍失敗，請直接截圖保存結果卡。')}};document.getElementById('restart').onclick=()=>location.reload();
 </script><script>
 const roleImageNames={'◈':'PSCS01','♜':'PSCS02','➶':'PSCS03','✧':'PSCS04'};
@@ -66,19 +69,21 @@ const roleImageExtensions=['jpg','jpeg','png'];
 function loadRoleImage(){
 	const art=document.getElementById('art');
 	const baseName=roleImageNames[art.textContent];
-	if(!baseName)return;
+	if(!baseName)return Promise.resolve(false);
 	let extensionIndex=0;
+	return new Promise(resolve=>{
 	const tryNext=()=>{
-		if(extensionIndex>=roleImageExtensions.length)return;
+		if(extensionIndex>=roleImageExtensions.length){resolve(false);return}
 		const image=document.createElement('img');
 		const extension=roleImageExtensions[extensionIndex++];
 		image.alt='職場角色插圖';
 		image.title='按住角色圖片即可另存';
-		image.onload=()=>{art.textContent='';art.appendChild(image)};
+		image.onload=()=>{art.textContent='';art.appendChild(image);resolve(true)};
 		image.onerror=tryNext;
-		image.src=`${baseName}.${extension}`;
+		image.src=new URL(`${baseName}.${extension}`,document.baseURI).href;
 	};
 	tryNext();
+});
 }
 async function downloadRoleCard(){
 	if(!window.html2canvas)return alertUser('下載功能需要網路載入元件，請直接截圖保存結果卡。');
@@ -110,7 +115,10 @@ document.addEventListener('pointerdown',event=>{
 });
 document.addEventListener('pointerup',()=>clearTimeout(holdTimer));
 document.addEventListener('pointercancel',()=>clearTimeout(holdTimer));
-document.getElementById('finish').addEventListener('click',()=>requestAnimationFrame(loadRoleImage));
+document.getElementById('finish').addEventListener('click',()=>requestAnimationFrame(async()=>{
+	const loaded=await loadRoleImage();
+	if(!loaded)alertUser('角色圖片載入失敗，請確認角色圖片檔案已部署到網站。');
+}));
 document.getElementById('finish').addEventListener('click',()=>requestAnimationFrame(()=>{
 	const card=document.getElementById('capture');
 	if(!card.querySelector('.result-meta')){
